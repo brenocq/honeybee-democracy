@@ -271,27 +271,88 @@ void SimulationWindow::render_consensus_plot() {
     if (!_environment)
         return;
     const auto& hives = _environment->hives();
+    const auto& nest_boxes = _environment->nest_boxes();
     if (hives.empty())
         return;
 
-    const size_t num_hives = hives.size();
-    const size_t num_boxes = _environment->nest_boxes().size();
+    // Each hive lives in its own small "panel" inside a single plot, offset along x.
+    // For each nest box:
+    //   angle  = atan2(nb.y, nb.x)     (env-origin → nest box direction)
+    //   length = ||nb||                (env-origin → nest box distance)
+    //   width  = consensus fraction for that box in this hive
+    //   color  = Jet(goodness), matching the environment plot
+    constexpr float kHiveSpacing = 3.0f;
+    constexpr float kMaxRectWidth = 0.4f;
+    constexpr float kYHalfRange = 1.5f;
+    constexpr ImPlotAxisFlags kAxisFlags =
+        ImPlotAxisFlags_NoTickLabels | ImPlotAxisFlags_NoTickMarks | ImPlotAxisFlags_NoGridLines | ImPlotAxisFlags_NoMenus;
 
-    std::vector<float> matrix(num_hives * num_boxes);
-    for (size_t h = 0; h < num_hives; h++) {
+    // ImPlotFlags_Equal forces equal pixels-per-unit on both axes so the rectangles render
+    // with true right angles. Using ImPlotCond_Always for the bounds would override Equal's
+    // aspect padding, so we set them once and let Equal pad whichever axis it needs.
+    if (!ImPlot::BeginPlot("##consensus", ImVec2(-1, 220), ImPlotFlags_Equal | ImPlotFlags_NoLegend | ImPlotFlags_NoMouseText))
+        return;
+    ImPlot::SetupAxes(nullptr, nullptr, kAxisFlags, kAxisFlags);
+    const double total_x = static_cast<double>(hives.size()) * static_cast<double>(kHiveSpacing);
+    ImPlot::SetupAxesLimits(-kHiveSpacing * 0.5, total_x - kHiveSpacing * 0.5, -kYHalfRange, kYHalfRange, ImPlotCond_Once);
+
+    for (size_t h = 0; h < hives.size(); h++) {
+        const float cx = static_cast<float>(h) * kHiveSpacing;
+        const float cy = 0.0f;
         const auto& hive = hives[h];
-        const float total = static_cast<float>(hive.bees().size());
-        for (size_t b = 0; b < num_boxes; b++)
-            matrix[h * num_boxes + b] = static_cast<float>(hive.consensus()[b]) / total;
+        const float total_bees = static_cast<float>(hive.bees().size());
+
+        for (size_t b = 0; b < nest_boxes.size(); b++) {
+            const Eigen::Vector2f nb_pos = nest_boxes[b].position();
+            const float length = nb_pos.norm();
+            if (length < 1e-6f)
+                continue;
+
+            const int consensus_count = hive.consensus()[b];
+            if (consensus_count == 0)
+                continue;
+            const float consensus_frac = static_cast<float>(consensus_count) / total_bees;
+
+            const float angle = std::atan2(nb_pos.y(), nb_pos.x());
+            const float dx = std::cos(angle);
+            const float dy = std::sin(angle);
+            const float perp_x = -dy;
+            const float perp_y = dx;
+            const float half_w = consensus_frac * kMaxRectWidth * 0.5f;
+
+            // CCW around the perimeter: base+perp → base-perp → tip-perp → tip+perp.
+            const float xs[4] = {
+                cx + perp_x * half_w,
+                cx - perp_x * half_w,
+                cx + dx * length - perp_x * half_w,
+                cx + dx * length + perp_x * half_w,
+            };
+            const float ys[4] = {
+                cy + perp_y * half_w,
+                cy - perp_y * half_w,
+                cy + dy * length - perp_y * half_w,
+                cy + dy * length + perp_y * half_w,
+            };
+
+            const ImVec4 color = ImPlot::SampleColormap(nest_boxes[b].goodness(), ImPlotColormap_Jet);
+            ImPlotSpec spec;
+            spec.FillColor = color;
+            spec.FillAlpha = 0.85f;
+            spec.LineColor = color;
+            ImPlot::PlotPolygon("##d", xs, ys, 4, spec);
+        }
+
+        // Hive center marker — colored by hive identity (matches environment plot).
+        const Eigen::Vector3f hc = hive.color();
+        const ImVec4 hive_color(hc.x(), hc.y(), hc.z(), 1.0f);
+        ImPlotSpec center_spec;
+        center_spec.Marker = ImPlotMarker_Circle;
+        center_spec.MarkerSize = 6.0f;
+        center_spec.MarkerFillColor = hive_color;
+        center_spec.MarkerLineColor = hive_color;
+        ImPlot::PlotScatter("##c", &cx, &cy, 1, center_spec);
     }
 
-    if (!ImPlot::BeginPlot("##consensus", ImVec2(-1, 220), ImPlotFlags_NoLegend | ImPlotFlags_NoMouseText))
-        return;
-    ImPlot::SetupAxes("Nest Box", "Hive", ImPlotAxisFlags_NoGridLines | ImPlotAxisFlags_NoMenus,
-                      ImPlotAxisFlags_NoGridLines | ImPlotAxisFlags_NoMenus | ImPlotAxisFlags_Invert);
-    ImPlot::SetupAxesLimits(0, static_cast<double>(num_boxes), 0, static_cast<double>(num_hives), ImPlotCond_Always);
-    ImPlot::PlotHeatmap("##h", matrix.data(), static_cast<int>(num_hives), static_cast<int>(num_boxes), 0.0, 1.0, nullptr, ImPlotPoint(0, 0),
-                        ImPlotPoint(static_cast<double>(num_boxes), static_cast<double>(num_hives)));
     ImPlot::EndPlot();
 }
 

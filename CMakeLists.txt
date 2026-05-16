@@ -79,6 +79,7 @@ target_link_libraries(implot PUBLIC imgui)
 # Create executable
 set(HONEYBEE_SOURCE
     ${CMAKE_SOURCE_DIR}/src/main.cpp
+    ${CMAKE_SOURCE_DIR}/src/sim/bee.cpp
     ${CMAKE_SOURCE_DIR}/src/ui/os_window.cpp
     ${CMAKE_SOURCE_DIR}/src/ui/ui.cpp
     ${CMAKE_SOURCE_DIR}/src/ui/windows/simulation_window.cpp

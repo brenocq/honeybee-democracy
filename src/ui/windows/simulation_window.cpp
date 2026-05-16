@@ -7,6 +7,10 @@
 #include <ui/windows/simulation_window.hpp>
 
 #include <imgui.h>
+#include <implot.h>
+#include <numeric>
+#include <string>
+#include <vector>
 
 namespace ui {
 
@@ -22,6 +26,15 @@ void SimulationWindow::render() {
     step_env();
     ImGui::Separator();
     render_status();
+
+    if (_environment) {
+        ImGui::SeparatorText("Environment");
+        render_environment_plot();
+        ImGui::SeparatorText("Fitness");
+        render_fitness_plot();
+        ImGui::SeparatorText("Consensus");
+        render_consensus_plot();
+    }
 
     ImGui::End();
 }
@@ -142,28 +155,133 @@ void SimulationWindow::render_status() {
     ImGui::SameLine(440);
     ImGui::Text("Step: %zu / %zu", _environment->current_step(), _config.steps_per_repetition);
 
-    ImGui::Spacing();
+}
 
-    if (ImGui::BeginTable("hive_fitness", 3, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingFixedFit)) {
-        ImGui::TableSetupColumn("Hive");
-        ImGui::TableSetupColumn("Color");
-        ImGui::TableSetupColumn("Fitness");
-        ImGui::TableHeadersRow();
+void SimulationWindow::render_environment_plot() {
+    if (!_environment)
+        return;
 
-        size_t i = 0;
-        for (const auto& hive : _environment->hives()) {
-            ImGui::TableNextRow();
-            ImGui::TableSetColumnIndex(0);
-            ImGui::Text("%zu", i);
-            ImGui::TableSetColumnIndex(1);
-            const Eigen::Vector3f c = hive.color();
-            ImGui::ColorButton("##color", ImVec4(c.x(), c.y(), c.z(), 1.0f), ImGuiColorEditFlags_NoTooltip, ImVec2(20, 20));
-            ImGui::TableSetColumnIndex(2);
-            ImGui::Text("%.4f", static_cast<double>(hive.fitness()));
-            i++;
-        }
-        ImGui::EndTable();
+    if (!ImPlot::BeginPlot("##env", ImVec2(-1, 320), ImPlotFlags_Equal | ImPlotFlags_NoLegend))
+        return;
+    ImPlot::SetupAxes(nullptr, nullptr, ImPlotAxisFlags_NoTickLabels | ImPlotAxisFlags_NoMenus,
+                      ImPlotAxisFlags_NoTickLabels | ImPlotAxisFlags_NoMenus);
+    ImPlot::SetupAxesLimits(-1.0, 1.0, -1.0, 1.0, ImPlotCond_Once);
+
+    // Nest boxes: diamond markers; color encodes goodness (purple gradient, matches the old viz).
+    for (const auto& nb : _environment->nest_boxes()) {
+        const float g = nb.goodness();
+        const ImVec4 color(g, 0.0f, g, 1.0f);
+        ImPlotSpec spec;
+        spec.Marker = ImPlotMarker_Diamond;
+        spec.MarkerSize = 6.0f;
+        spec.MarkerFillColor = color;
+        spec.MarkerLineColor = color;
+        const float x = nb.position().x();
+        const float y = nb.position().y();
+        ImPlot::PlotScatter("##nb", &x, &y, 1, spec);
     }
+
+    // Per-hive: bees as small dots, hive center as a larger square — both in hive color.
+    for (const auto& hive : _environment->hives()) {
+        const Eigen::Vector3f c = hive.color();
+        const ImVec4 color(c.x(), c.y(), c.z(), 1.0f);
+
+        const auto& bees = hive.bees();
+        std::vector<float> xs;
+        std::vector<float> ys;
+        xs.reserve(bees.size());
+        ys.reserve(bees.size());
+        for (const auto& bee : bees) {
+            xs.push_back(bee.position().x());
+            ys.push_back(bee.position().y());
+        }
+        ImPlotSpec bee_spec;
+        bee_spec.Marker = ImPlotMarker_Circle;
+        bee_spec.MarkerSize = 2.0f;
+        bee_spec.MarkerFillColor = color;
+        bee_spec.MarkerLineColor = color;
+        ImPlot::PlotScatter("##bees", xs.data(), ys.data(), static_cast<int>(xs.size()), bee_spec);
+
+        const float hx = hive.position().x();
+        const float hy = hive.position().y();
+        ImPlotSpec hive_spec;
+        hive_spec.Marker = ImPlotMarker_Square;
+        hive_spec.MarkerSize = 8.0f;
+        hive_spec.MarkerFillColor = color;
+        hive_spec.MarkerLineColor = color;
+        ImPlot::PlotScatter("##hive", &hx, &hy, 1, hive_spec);
+    }
+
+    ImPlot::EndPlot();
+}
+
+void SimulationWindow::render_fitness_plot() {
+    if (!_environment)
+        return;
+
+    const auto& gen_fitness = _environment->generation_fitness();
+    if (gen_fitness.empty()) {
+        ImGui::TextDisabled("(No completed generations yet.)");
+        return;
+    }
+
+    if (!ImPlot::BeginPlot("##fitness", ImVec2(-1, 220)))
+        return;
+    // While the sim is running, the data grows every generation. Auto-fit keeps both axes
+    // chasing the data; pausing/stopping freezes the limits so the user can pan/zoom.
+    const ImPlotAxisFlags fit_flag = (_state == State::Running) ? ImPlotAxisFlags_AutoFit : 0;
+    ImPlot::SetupAxes("Generation", "Fitness", fit_flag, fit_flag);
+
+    const auto& hives = _environment->hives();
+    const size_t num_hives = hives.size();
+    const size_t num_gens = gen_fitness.size();
+
+    std::vector<float> xs(num_gens);
+    std::iota(xs.begin(), xs.end(), 0.0f);
+
+    for (size_t h = 0; h < num_hives; h++) {
+        std::vector<float> ys;
+        ys.reserve(num_gens);
+        for (const auto& gen : gen_fitness)
+            ys.push_back(gen[h]);
+
+        const Eigen::Vector3f c = hives[h].color();
+        ImPlotSpec spec;
+        spec.LineColor = ImVec4(c.x(), c.y(), c.z(), 1.0f);
+        spec.LineWeight = 2.0f;
+        const std::string label = "Hive " + std::to_string(h);
+        ImPlot::PlotLine(label.c_str(), xs.data(), ys.data(), static_cast<int>(num_gens), spec);
+    }
+
+    ImPlot::EndPlot();
+}
+
+void SimulationWindow::render_consensus_plot() {
+    if (!_environment)
+        return;
+    const auto& hives = _environment->hives();
+    if (hives.empty())
+        return;
+
+    const size_t num_hives = hives.size();
+    const size_t num_boxes = _environment->nest_boxes().size();
+
+    std::vector<float> matrix(num_hives * num_boxes);
+    for (size_t h = 0; h < num_hives; h++) {
+        const auto& hive = hives[h];
+        const float total = static_cast<float>(hive.bees().size());
+        for (size_t b = 0; b < num_boxes; b++)
+            matrix[h * num_boxes + b] = static_cast<float>(hive.consensus()[b]) / total;
+    }
+
+    if (!ImPlot::BeginPlot("##consensus", ImVec2(-1, 220), ImPlotFlags_NoLegend | ImPlotFlags_NoMouseText))
+        return;
+    ImPlot::SetupAxes("Nest Box", "Hive", ImPlotAxisFlags_NoGridLines | ImPlotAxisFlags_NoMenus,
+                      ImPlotAxisFlags_NoGridLines | ImPlotAxisFlags_NoMenus | ImPlotAxisFlags_Invert);
+    ImPlot::SetupAxesLimits(0, static_cast<double>(num_boxes), 0, static_cast<double>(num_hives), ImPlotCond_Always);
+    ImPlot::PlotHeatmap("##h", matrix.data(), static_cast<int>(num_hives), static_cast<int>(num_boxes), 0.0, 1.0, nullptr, ImPlotPoint(0, 0),
+                        ImPlotPoint(static_cast<double>(num_boxes), static_cast<double>(num_hives)));
+    ImPlot::EndPlot();
 }
 
 } // namespace ui

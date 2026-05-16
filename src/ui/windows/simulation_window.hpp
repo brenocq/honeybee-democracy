@@ -23,6 +23,9 @@ class SimulationWindow {
     void render_config();
     void render_controls();
     void render_status();
+    void render_environment_plot();
+    void render_fitness_plot();
+    void render_consensus_plot();
     void step_env();
 
     State _state{State::Idle};

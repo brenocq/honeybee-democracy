@@ -44,7 +44,7 @@ Dependencies: a C++17 compiler, CMake ≥ 3.14, OpenGL, and X11 / GLFW headers. 
 ./build.sh -d -x       # debug build, then run
 ```
 
-Developed on Linux; macOS should work, Windows is untested.
+Tested on Linux and macOS; Windows is untested but should work.
 
 ## The UI
 

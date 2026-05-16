@@ -15,8 +15,6 @@ namespace sim {
 
 namespace {
 constexpr float kBorder = 0.9f;
-constexpr size_t kPredationInterval = 15;
-constexpr size_t kPredationDivisor = 10; // re-randomize worst 1/N of hives
 constexpr float kGoodnessExponent = 4.0f; // u^k makes good boxes rare; raise to skew further toward bad
 } // namespace
 
@@ -85,7 +83,8 @@ void Environment::end_generation() {
             best_index = i;
 
     const std::array<double, 4> best_gene = _hives[best_index].gene();
-    std::uniform_real_distribution<double> mut_delta(-0.5, 0.5);
+    const double m = _config.mutation_amplitude;
+    std::uniform_real_distribution<double> mut_delta(-m, m);
 
     for (size_t i = 0; i < _hives.size(); i++) {
         if (i == best_index)
@@ -100,15 +99,15 @@ void Environment::end_generation() {
         _hives[i].reset(random_position(), gene);
     }
 
-    // Predation: every Nth generation, replace the worst 1/N of hives with fresh random genes.
-    if (_generation % kPredationInterval == 0) {
+    // Predation: every Nth generation, replace the worst F fraction of hives with fresh random genes.
+    if (_config.predation_interval > 0 && _generation % _config.predation_interval == 0) {
         std::vector<std::pair<float, size_t>> ranked;
         ranked.reserve(_hives.size());
         for (size_t i = 0; i < _hives.size(); i++)
             ranked.emplace_back(gen_fitness[i], i);
         std::sort(ranked.begin(), ranked.end());
 
-        const size_t kill_count = _hives.size() / kPredationDivisor;
+        const size_t kill_count = static_cast<size_t>(static_cast<float>(_hives.size()) * _config.predation_fraction);
         for (size_t k = 0; k < kill_count; k++)
             _hives[ranked[k].second].reset(random_position(), random_gene());
     }

@@ -14,6 +14,19 @@
 
 namespace ui {
 
+namespace {
+// Match ImGui demo's HelpMarker: render a faint "(?)" that shows the tooltip when hovered.
+void help_marker(const char* desc) {
+    ImGui::TextDisabled("(?)");
+    if (ImGui::BeginItemTooltip()) {
+        ImGui::PushTextWrapPos(ImGui::GetFontSize() * 35.0f);
+        ImGui::TextUnformatted(desc);
+        ImGui::PopTextWrapPos();
+        ImGui::EndTooltip();
+    }
+}
+} // namespace
+
 void SimulationWindow::render() {
     if (!ImGui::Begin("Simulation")) {
         ImGui::End();
@@ -27,7 +40,7 @@ void SimulationWindow::render() {
     ImGui::Separator();
     render_status();
 
-    if (_environment) {
+    if (_environment && ImGui::CollapsingHeader("Plots", ImGuiTreeNodeFlags_DefaultOpen)) {
         ImGui::SeparatorText("Environment");
         render_environment_plot();
         ImGui::SeparatorText("Fitness");
@@ -67,6 +80,9 @@ void SimulationWindow::render_config() {
     int steps_per_repetition = static_cast<int>(_config.steps_per_repetition);
     int repetitions_per_generation = static_cast<int>(_config.repetitions_per_generation);
     int seed = static_cast<int>(_config.seed);
+    int predation_interval = static_cast<int>(_config.predation_interval);
+    float predation_fraction = _config.predation_fraction;
+    float mutation_amplitude = static_cast<float>(_config.mutation_amplitude);
 
     ImGui::SeparatorText("Colony");
     ImGui::SetNextItemWidth(160);
@@ -79,7 +95,7 @@ void SimulationWindow::render_config() {
     ImGui::SetNextItemWidth(160);
     ImGui::InputInt("Nest boxes", &num_nest_boxes);
 
-    ImGui::SeparatorText("Optimization");
+    ImGui::SeparatorText("Evaluation");
     ImGui::SetNextItemWidth(160);
     ImGui::InputInt("Steps per repetition", &steps_per_repetition);
     ImGui::SameLine();
@@ -91,6 +107,22 @@ void SimulationWindow::render_config() {
     ImGui::SameLine();
     ImGui::SetNextItemWidth(160);
     ImGui::InputInt("Seed", &seed);
+
+    ImGui::SeparatorText("Genetic Algorithm");
+    ImGui::SetNextItemWidth(160);
+    ImGui::InputInt("Predation interval", &predation_interval);
+    ImGui::SameLine();
+    help_marker("Number of generations between predation events. Every Nth generation, the worst-performing hives are wiped and replaced with fresh random genes — this prevents the population from getting stuck on a local optimum. Set to 0 to disable predation entirely.");
+    ImGui::SameLine();
+    ImGui::SetNextItemWidth(160);
+    ImGui::InputFloat("Predation fraction", &predation_fraction, 0.01f, 0.1f, "%.2f");
+    ImGui::SameLine();
+    help_marker("Fraction of the worst-performing hives to re-randomize during a predation event. 0.10 means the bottom 10%. Higher values inject more diversity per event.");
+
+    ImGui::SetNextItemWidth(160);
+    ImGui::InputFloat("Mutation amplitude", &mutation_amplitude, 0.05f, 0.5f, "%.2f");
+    ImGui::SameLine();
+    help_marker("Strength of the random jitter applied to each gene during crossover. Each non-best hive's new gene is computed as 0.5 × best + 0.5 × own + best × U(-m, +m), where m is this value. Higher = more exploration, lower = more exploitation around the current best.");
 
     if (num_colonies < 1)
         num_colonies = 1;
@@ -104,6 +136,14 @@ void SimulationWindow::render_config() {
         repetitions_per_generation = 1;
     if (_steps_offline < 1)
         _steps_offline = 1;
+    if (predation_interval < 0)
+        predation_interval = 0;
+    if (predation_fraction < 0.0f)
+        predation_fraction = 0.0f;
+    if (predation_fraction > 1.0f)
+        predation_fraction = 1.0f;
+    if (mutation_amplitude < 0.0f)
+        mutation_amplitude = 0.0f;
 
     _config.num_colonies = static_cast<size_t>(num_colonies);
     _config.bees_per_colony = static_cast<size_t>(bees_per_colony);
@@ -111,6 +151,9 @@ void SimulationWindow::render_config() {
     _config.steps_per_repetition = static_cast<size_t>(steps_per_repetition);
     _config.repetitions_per_generation = static_cast<size_t>(repetitions_per_generation);
     _config.seed = static_cast<uint32_t>(seed);
+    _config.predation_interval = static_cast<size_t>(predation_interval);
+    _config.predation_fraction = predation_fraction;
+    _config.mutation_amplitude = static_cast<double>(mutation_amplitude);
 
     ImGui::EndDisabled();
 }

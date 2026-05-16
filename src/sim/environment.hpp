@@ -19,9 +19,16 @@ struct Config {
     size_t num_colonies = 10;
     size_t bees_per_colony = 100;
     size_t num_nest_boxes = 20;
+
+    // Evaluation
     size_t steps_per_repetition = 5000;
     size_t repetitions_per_generation = 5;
     uint32_t seed = 42;
+
+    // Genetic algorithm
+    size_t predation_interval = 15;     // generations between predation events
+    float predation_fraction = 0.10f;   // fraction of worst hives to re-randomize
+    double mutation_amplitude = 0.5;    // uniform jitter half-range applied during crossover
 };
 
 class Environment {

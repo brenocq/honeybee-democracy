@@ -37,14 +37,70 @@ Several swarms with different gene values share the world and run the same explo
 
 ## Build and run
 
-Dependencies: a C++17 compiler, CMake ≥ 3.14, OpenGL, and X11 / GLFW headers. Everything else (ImGui, ImPlot, GLFW, Eigen) is fetched by CMake.
+You need a C++17 compiler, CMake ≥ 3.14, Git, and OpenGL + windowing system development headers. Everything else (ImGui, ImPlot, GLFW, Eigen) is fetched and built by CMake — you don't have to install them yourself.
+
+Tested on Linux and macOS; Windows is untested but should work.
+
+### 1. Install the system dependencies
+
+**Linux — Ubuntu / Debian**
+
+```bash
+sudo apt update
+sudo apt install build-essential cmake git \
+                 libgl1-mesa-dev libxinerama-dev libxcursor-dev libxi-dev libxrandr-dev
+```
+
+**Linux — Arch / Manjaro**
+
+```bash
+sudo pacman -S --needed base-devel cmake git \
+                        mesa libxinerama libxcursor libxi libxrandr
+```
+
+**Linux — Fedora**
+
+```bash
+sudo dnf install gcc-c++ cmake git \
+                 mesa-libGL-devel libXinerama-devel libXcursor-devel libXi-devel libXrandr-devel
+```
+
+**MacOS**
+
+```bash
+xcode-select --install        # if you don't already have the Xcode command-line tools
+brew install cmake git        # if you don't already have Homebrew, install it from https://brew.sh
+```
+
+**Windows**
+
+Install [Visual Studio 2019 or newer](https://visualstudio.microsoft.com/downloads/) (the free Community edition is fine — pick the "Desktop development with C++" workload), plus [CMake](https://cmake.org/download/) and [Git for Windows](https://git-scm.com/download/win). Run the build below from a *Developer Command Prompt for VS*.
+
+### 2. Clone the repo
+
+```bash
+git clone https://github.com/brenocq/honeybee-democracy.git
+cd honeybee-democracy
+```
+
+### 3. Build and run
 
 ```bash
 ./build.sh -x          # release build, then run
-./build.sh -d -x       # debug build, then run
 ```
 
-Tested on Linux and macOS; Windows is untested but should work.
+That's it — a window should pop up with the simulation. Press *Start* to begin.
+
+Other useful flags (`./build.sh --help` lists them all):
+
+```bash
+./build.sh -h          # show help message
+./build.sh -d -x       # debug build, then run
+./build.sh -j 4        # limit to 4 parallel compile jobs
+./build.sh             # just build, don't run
+```
+
+The first build takes a few minutes because CMake fetches and compiles GLFW, ImGui, ImPlot and Eigen from source. Subsequent builds are incremental and finish in seconds.
 
 ## The UI
 

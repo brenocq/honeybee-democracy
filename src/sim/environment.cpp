@@ -7,6 +7,7 @@
 #include <sim/environment.hpp>
 
 #include <algorithm>
+#include <cmath>
 #include <utility>
 
 namespace sim {
@@ -15,6 +16,7 @@ namespace {
 constexpr float kBorder = 0.9f;
 constexpr size_t kPredationInterval = 15;
 constexpr size_t kPredationDivisor = 10; // re-randomize worst 1/N of hives
+constexpr float kGoodnessExponent = 4.0f; // u^k makes good boxes rare; raise to skew further toward bad
 } // namespace
 
 Environment::Environment(const Config& config) : _config(config), _rng(config.seed) {
@@ -117,8 +119,10 @@ void Environment::randomize_nest_boxes() {
 
     for (size_t i = 0; i < _nest_boxes.size(); i++) {
         const Eigen::Vector2f pos(pos_dist(_rng), pos_dist(_rng));
-        // The first box is always the "ideal" nest with maximum goodness.
-        const float goodness = (i == 0) ? 1.0f : good_dist(_rng);
+        // Box 0 is always the "ideal" nest. The others get a power-law-skewed
+        // goodness (u^k with k > 1) so most boxes are poor and good ones are rare.
+        const float u = good_dist(_rng);
+        const float goodness = (i == 0) ? 1.0f : std::pow(u, kGoodnessExponent);
         _nest_boxes[i] = NestBox(pos, goodness);
     }
 }

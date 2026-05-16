@@ -42,7 +42,16 @@ void SimulationWindow::render() {
 void SimulationWindow::step_env() {
     if (_state != State::Running || !_environment)
         return;
-    _environment->step(static_cast<size_t>(_steps_offline));
+    if (_realtime) {
+        constexpr double kRealtimeStepInterval = 0.025; // 25ms between steps when watching bees move
+        const double now = ImGui::GetTime();
+        if (now - _last_realtime_step >= kRealtimeStepInterval) {
+            _environment->step(1);
+            _last_realtime_step = now;
+        }
+    } else {
+        _environment->step(static_cast<size_t>(_steps_offline));
+    }
 }
 
 void SimulationWindow::render_config() {
@@ -141,6 +150,9 @@ void SimulationWindow::render_controls() {
         _environment = std::make_unique<sim::Environment>(_config);
     }
     ImGui::EndDisabled();
+
+    ImGui::SameLine();
+    ImGui::Checkbox("Real-time", &_realtime);
 }
 
 void SimulationWindow::render_status() {

@@ -31,6 +31,8 @@ class SimulationWindow {
     State _state{State::Idle};
     sim::Config _config{};
     int _steps_offline{100}; // smaller than the old code's 1000 so the main-thread loop stays responsive
+    bool _realtime{false};
+    double _last_realtime_step{0.0};
     std::unique_ptr<sim::Environment> _environment;
 };
 

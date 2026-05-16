@@ -6,6 +6,8 @@
 //--------------------------------------------------
 #pragma once
 
+#include <ui/windows/simulation_window.hpp>
+
 namespace ui {
 
 class UI {
@@ -22,6 +24,8 @@ class UI {
     bool _first_render = true;
     bool _show_imgui_demo = false;
     bool _show_implot_demo = false;
+
+    SimulationWindow _simulation_window;
 };
 
 } // namespace ui

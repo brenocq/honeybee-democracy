@@ -71,6 +71,7 @@ set(HONEYBEE_SOURCE
     ${CMAKE_SOURCE_DIR}/src/main.cpp
     ${CMAKE_SOURCE_DIR}/src/ui/os_window.cpp
     ${CMAKE_SOURCE_DIR}/src/ui/ui.cpp
+    ${CMAKE_SOURCE_DIR}/src/ui/windows/simulation_window.cpp
 )
 add_executable(honeybee_democracy ${HONEYBEE_SOURCE})
 target_include_directories(honeybee_democracy PRIVATE ${CMAKE_SOURCE_DIR}/src)

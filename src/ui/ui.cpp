@@ -20,6 +20,8 @@ void UI::update() {
     render_menu_bar();
     setup_dockspace();
 
+    _simulation_window.render();
+
     if (_show_imgui_demo)
         ImGui::ShowDemoWindow(&_show_imgui_demo);
     if (_show_implot_demo)
@@ -44,6 +46,7 @@ void UI::setup_dockspace() {
         ImGui::DockBuilderRemoveNode(dockspace_id);
         ImGui::DockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_DockSpace);
         ImGui::DockBuilderSetNodeSize(dockspace_id, ImGui::GetMainViewport()->WorkSize);
+        ImGui::DockBuilderDockWindow("Simulation", dockspace_id);
         ImGui::DockBuilderFinish(dockspace_id);
         _first_render = false;
     }

@@ -179,10 +179,9 @@ void SimulationWindow::render_environment_plot() {
                       ImPlotAxisFlags_NoTickLabels | ImPlotAxisFlags_NoMenus);
     ImPlot::SetupAxesLimits(-1.0, 1.0, -1.0, 1.0, ImPlotCond_Once);
 
-    // Nest boxes: diamond markers; color encodes goodness (purple gradient, matches the old viz).
+    // Nest boxes: diamond markers; color encodes goodness via the Jet colormap.
     for (const auto& nb : _environment->nest_boxes()) {
-        const float g = nb.goodness();
-        const ImVec4 color(g, 0.0f, g, 1.0f);
+        const ImVec4 color = ImPlot::SampleColormap(nb.goodness(), ImPlotColormap_Jet);
         ImPlotSpec spec;
         spec.Marker = ImPlotMarker_Diamond;
         spec.MarkerSize = 6.0f;

@@ -11,6 +11,16 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 include(FetchContent)
 set(FETCHCONTENT_QUIET OFF)
 
+# Setup Eigen
+FetchContent_Declare(
+    Eigen
+    GIT_REPOSITORY https://gitlab.com/libeigen/eigen.git
+    GIT_TAG "3.4.0"
+    GIT_PROGRESS TRUE
+    GIT_SHALLOW TRUE
+)
+FetchContent_MakeAvailable(Eigen)
+
 # Setup OpenGL
 # cmake-format: off
 cmake_policy(SET CMP0072 NEW) # Pefer GLVND over legacy GL libraries
@@ -76,7 +86,7 @@ set(HONEYBEE_SOURCE
 add_executable(honeybee_democracy ${HONEYBEE_SOURCE})
 target_include_directories(honeybee_democracy PRIVATE ${CMAKE_SOURCE_DIR}/src)
 target_compile_definitions(honeybee_democracy PRIVATE HONEYBEE_SOURCE_DIR="${CMAKE_SOURCE_DIR}")
-target_link_libraries(honeybee_democracy PRIVATE implot)
+target_link_libraries(honeybee_democracy PRIVATE Eigen3::Eigen implot)
 
 # Silence OpenGL deprecation warnings on macOS
 if(APPLE)

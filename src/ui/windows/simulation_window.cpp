@@ -84,14 +84,13 @@ void SimulationWindow::render_config() {
     float predation_fraction = _config.predation_fraction;
     float mutation_amplitude = static_cast<float>(_config.mutation_amplitude);
 
-    ImGui::SeparatorText("Colony");
+    ImGui::SeparatorText("Environment");
     ImGui::SetNextItemWidth(160);
     ImGui::InputInt("Colonies", &num_colonies);
     ImGui::SameLine();
     ImGui::SetNextItemWidth(160);
     ImGui::InputInt("Bees per colony", &bees_per_colony);
 
-    ImGui::SeparatorText("Environment");
     ImGui::SetNextItemWidth(160);
     ImGui::InputInt("Nest boxes", &num_nest_boxes);
 

@@ -6,23 +6,29 @@
 //--------------------------------------------------
 #pragma once
 
+#include <memory>
+#include <sim/environment.hpp>
+
 namespace ui {
 
 class SimulationWindow {
   public:
     void render();
 
-  private:
-    void render_config();
+    const sim::Environment* environment() const { return _environment.get(); }
 
-    // Simulation parameters
-    int _num_colonies = 10;
-    int _bees_per_colony = 100;
-    int _num_nest_boxes = 20;
-    int _steps_per_repetition = 5000;
-    int _repetitions_per_generation = 5;
-    int _steps_offline = 1000;
-    int _seed = 42;
+  private:
+    enum class State { Idle, Running, Paused };
+
+    void render_config();
+    void render_controls();
+    void render_status();
+    void step_env();
+
+    State _state{State::Idle};
+    sim::Config _config{};
+    int _steps_offline{100}; // smaller than the old code's 1000 so the main-thread loop stays responsive
+    std::unique_ptr<sim::Environment> _environment;
 };
 
 } // namespace ui

@@ -33,6 +33,7 @@ class SimulationWindow {
     int _steps_offline{100}; // smaller than the old code's 1000 so the main-thread loop stays responsive
     bool _realtime{false};
     double _last_realtime_step{0.0};
+    bool _reset_env_axes{false}; // one-shot: forces the env plot's Y axis to [-1, 1] on the next frame
     std::unique_ptr<sim::Environment> _environment;
 };
 

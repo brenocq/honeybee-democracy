@@ -58,7 +58,6 @@ class Environment {
     void randomize_nest_boxes();
 
     Eigen::Vector2f random_position();
-    Eigen::Vector3f random_color();
     std::array<double, 4> random_gene();
 
     Config _config;

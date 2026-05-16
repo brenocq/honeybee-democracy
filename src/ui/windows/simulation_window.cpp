@@ -123,8 +123,10 @@ void SimulationWindow::render_controls() {
     const bool can_start = (_state != State::Running);
     ImGui::BeginDisabled(!can_start);
     if (ImGui::Button(start_label, button_size)) {
-        if (_state == State::Idle)
+        if (_state == State::Idle) {
             _environment = std::make_unique<sim::Environment>(_config);
+            _reset_env_axes = true;
+        }
         _state = State::Running;
     }
     ImGui::EndDisabled();
@@ -148,6 +150,7 @@ void SimulationWindow::render_controls() {
     if (ImGui::Button("Reset", button_size)) {
         // Recreate from current config, keep current play state.
         _environment = std::make_unique<sim::Environment>(_config);
+        _reset_env_axes = true;
     }
     ImGui::EndDisabled();
 
@@ -175,9 +178,14 @@ void SimulationWindow::render_environment_plot() {
 
     if (!ImPlot::BeginPlot("##env", ImVec2(-1, 320), ImPlotFlags_Equal | ImPlotFlags_NoLegend))
         return;
-    ImPlot::SetupAxes(nullptr, nullptr, ImPlotAxisFlags_NoTickLabels | ImPlotAxisFlags_NoMenus,
-                      ImPlotAxisFlags_NoTickLabels | ImPlotAxisFlags_NoMenus);
-    ImPlot::SetupAxesLimits(-1.0, 1.0, -1.0, 1.0, ImPlotCond_Once);
+    constexpr ImPlotAxisFlags kBase = ImPlotAxisFlags_NoTickLabels | ImPlotAxisFlags_NoMenus;
+    ImPlot::SetupAxes(nullptr, nullptr, kBase, kBase);
+    // Pin both axes to the world bounds on the frame right after a fresh env is created
+    // (Start from Idle or Reset). After that the user can pan/zoom freely.
+    if (_reset_env_axes) {
+        ImPlot::SetupAxesLimits(-1.0, 1.0, -1.0, 1.0, ImPlotCond_Always);
+        _reset_env_axes = false;
+    }
 
     // Nest boxes: diamond markers; color encodes goodness via the Jet colormap.
     for (const auto& nb : _environment->nest_boxes()) {

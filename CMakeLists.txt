@@ -80,6 +80,7 @@ target_link_libraries(implot PUBLIC imgui)
 set(HONEYBEE_SOURCE
     ${CMAKE_SOURCE_DIR}/src/main.cpp
     ${CMAKE_SOURCE_DIR}/src/sim/bee.cpp
+    ${CMAKE_SOURCE_DIR}/src/sim/color.cpp
     ${CMAKE_SOURCE_DIR}/src/sim/environment.cpp
     ${CMAKE_SOURCE_DIR}/src/sim/hive.cpp
     ${CMAKE_SOURCE_DIR}/src/ui/os_window.cpp

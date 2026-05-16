@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <sim/color.hpp>
 #include <utility>
 
 namespace sim {
@@ -25,7 +26,7 @@ Environment::Environment(const Config& config) : _config(config), _rng(config.se
 
     _hives.reserve(config.num_colonies);
     for (size_t i = 0; i < config.num_colonies; i++) {
-        _hives.emplace_back(random_position(), random_color(), random_gene(), config.bees_per_colony, static_cast<uint32_t>(_rng()));
+        _hives.emplace_back(random_position(), palette_color(i), random_gene(), config.bees_per_colony, static_cast<uint32_t>(_rng()));
         _hives.back().set_nest_boxes(&_nest_boxes);
     }
 }
@@ -130,11 +131,6 @@ void Environment::randomize_nest_boxes() {
 Eigen::Vector2f Environment::random_position() {
     std::uniform_real_distribution<float> dist(-kBorder, kBorder);
     return {dist(_rng), dist(_rng)};
-}
-
-Eigen::Vector3f Environment::random_color() {
-    std::uniform_real_distribution<float> dist(0.0f, 1.0f);
-    return {dist(_rng), dist(_rng), dist(_rng)};
 }
 
 std::array<double, 4> Environment::random_gene() {

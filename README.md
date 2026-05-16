@@ -50,6 +50,10 @@ Developed on Linux; macOS should work, Windows is untested.
 
 The Simulation window has three stacked plots driven by a single set of controls — `Start / Pause / Stop / Reset` plus a `Real-time` checkbox that paces the simulation at one step every 25 ms so you can actually watch the bees fly.
 
+<div align="center">
+<img width="800" alt="image" src="https://github.com/user-attachments/assets/95874d28-0d4d-47ce-9845-586e7a1add66" />
+</div>
+
 **Environment plot** — the 2D world. Hives appear as colored squares, their bees as small dots in the same color, and nest boxes as diamonds coloured by quality on a Jet colormap (blue = poor, red = ideal).
 
 **Fitness plot** — one line per hive showing its best-of-run fitness over generations. The lines climb and converge as the GA finds better strategies.

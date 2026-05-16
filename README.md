@@ -7,3 +7,7 @@ This project is based on the book "Honeybee Democracy" by Thomas D. Seeley. In t
 <div align="center">
   <img height="200" alt="honeybee democracy book cover" src="https://github.com/user-attachments/assets/96486e4e-c6fb-4b64-8f72-ed7904427f08" />
 </div>
+
+<div align="center">
+ <img height="250" alt="bee_dance" src="https://github.com/user-attachments/assets/e174c784-718b-4406-bdad-a12ef59851b8" />
+</div>
